@@ -36,7 +36,7 @@ docker build --squash -t prbinu/novnc-desktop -f Dockerfile .
 
 ### ARM64 architectures
 
-(inclugins Apple M1)
+(including Apple M1)
 
 ```bash
 git clone https://github.com/prbinu/novnc-desktop.git
