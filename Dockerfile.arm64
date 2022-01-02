@@ -8,7 +8,7 @@ FROM --platform=linux/arm64 ubuntu:focal
 ENV DEBIAN_FRONTEND=noninteractive 
 
 RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends openbox tint2 xdg-utils lxterminal hsetroot tigervnc-standalone-server supervisor && \
+    apt-get install -y --no-install-recommends openbox tint2 xdg-utils lxterminal hsetroot x11vnc supervisor && \
     rm -rf /var/lib/apt/lists
 
 RUN apt-get update -y && \
