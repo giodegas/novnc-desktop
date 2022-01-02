@@ -8,7 +8,7 @@ FROM --platform=linux/arm64 ubuntu:focal
 ENV DEBIAN_FRONTEND=noninteractive 
 
 RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends openbox tint2 xdg-utils lxterminal hsetroot xfce4 xfce4-goodies tightvncserver supervisor && \
+    apt-get install -y --no-install-recommends openbox tint2 xdg-utils lxterminal hsetroot tightvncserver supervisor && \
     rm -rf /var/lib/apt/lists
 
 RUN apt-get update -y && \
