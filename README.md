@@ -26,6 +26,7 @@ This Dockerfile is derived from <a href="https://www.digitalocean.com/community/
 
 ## Build
 
+### Intel architectures
 ```bash
 git clone https://github.com/prbinu/novnc-desktop.git
 cd novnc-desktop
@@ -33,6 +34,16 @@ cd novnc-desktop
 docker build --squash -t prbinu/novnc-desktop -f Dockerfile .
 ```
 
+### ARM64 architectures
+
+(inclugins Apple M1)
+
+```bash
+git clone https://github.com/prbinu/novnc-desktop.git
+cd novnc-desktop
+
+docker build --squash -t prbinu/novnc-desktop -f Dockerfile.arm64 .
+```
 ### Run
 
 ```bash
