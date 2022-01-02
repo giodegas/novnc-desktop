@@ -42,7 +42,7 @@ docker build --squash -t prbinu/novnc-desktop -f Dockerfile .
 git clone https://github.com/prbinu/novnc-desktop.git
 cd novnc-desktop
 
-docker build --squash -t prbinu/novnc-desktop -f Dockerfile.arm64 .
+docker build -t prbinu/novnc-desktop -f Dockerfile.arm64 .
 ```
 ### Run
 
