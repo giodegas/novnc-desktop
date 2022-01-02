@@ -16,7 +16,7 @@ RUN apt-get update -y && \
     rm -rf /var/lib/apt/lists
 
 COPY --from=easy-novnc-build /bin/easy-novnc /usr/local/bin/
-COPY supervisord.conf /etc/
+COPY supervisord_arm64.conf /etc/supervisord.conf
 COPY menu.xml /etc/xdg/openbox/
 RUN echo 'hsetroot -solid "#123456" &' >> /etc/xdg/openbox/autostart
 
