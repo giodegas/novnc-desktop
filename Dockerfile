@@ -11,7 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
     openbox tint2 xdg-utils lxterminal hsetroot tigervnc-standalone-server supervisor \
-    vim nano openssh-client wget curl rsync ca-certificates apulse libpulse0 \
+    vim nano geany openssh-client wget curl rsync ca-certificates apulse libpulse0 \
     git \
     firefox-esr \
     python3 python3-pip python3-venv python3-tk \

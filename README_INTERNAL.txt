@@ -30,6 +30,11 @@ Vim: Advanced text editor
   - From terminal: vim filename
   - Or from menu: Right-click -> Vim
 
+Geany: Lightweight GUI text editor
+  - From terminal: geany filename
+  - Or from menu: Right-click -> Geany (if available)
+  - Or launch from terminal: geany &
+
 System Monitoring
 -----------------
 htop: System resource monitor
