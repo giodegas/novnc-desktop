@@ -3,7 +3,7 @@
     <menu id="root-menu" label="Openbox 3">
         <item label="Firefox">
             <action name="Execute">
-                <execute>/usr/bin/firefox</execute>
+                <execute>/usr/bin/firefox-esr</execute>
             </action>
         </item>
         <separator />
