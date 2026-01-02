@@ -1,27 +1,47 @@
-FROM golang:1.23 AS easy-novnc-build
+FROM docker.io/library/golang:1.23 AS easy-novnc-build
 WORKDIR /src
 RUN go mod init build && \
     go get github.com/geek1011/easy-novnc@latest && \
     go build -o /bin/easy-novnc github.com/geek1011/easy-novnc
 
-FROM ubuntu:22.04
+FROM docker.io/library/debian:bookworm-slim
 ENV DEBIAN_FRONTEND=noninteractive 
 
+# Install base packages and Firefox ESR (without snap)
 RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends openbox tint2 xdg-utils lxterminal hsetroot tigervnc-standalone-server supervisor vim openssh-client wget curl rsync ca-certificates apulse libpulse0 firefox htop tar xzip gzip bzip2 zip unzip && \
+    apt-get install -y --no-install-recommends \
+    openbox tint2 xdg-utils lxterminal hsetroot tigervnc-standalone-server supervisor \
+    vim openssh-client wget curl rsync ca-certificates apulse libpulse0 \
+    firefox-esr \
+    htop tar xzip gzip bzip2 zip unzip \
+    sudo locales && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for desktop
+RUN useradd -m -s /bin/bash -G audio,video desktop && \
+    echo "desktop:desktop" | chpasswd && \
+    echo "desktop ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
+    mkdir -p /tmp/.X11-unix && \
+    chmod 1777 /tmp/.X11-unix
 
 COPY --from=easy-novnc-build /bin/easy-novnc /usr/local/bin/
 COPY supervisord.conf /etc/
 COPY menu.xml /etc/xdg/openbox/
-RUN echo 'hsetroot -solid "#123456" &' >> /etc/xdg/openbox/autostart
 
-RUN mkdir -p /etc/firefox
-RUN echo 'pref("browser.tabs.remote.autostart", false);' >> /etc/firefox/syspref.js
+# Configure desktop user directories and permissions
+RUN mkdir -p /home/desktop/.config/tint2 && \
+    mkdir -p /home/desktop/.config/openbox && \
+    cp /etc/xdg/openbox/menu.xml /home/desktop/.config/openbox/ && \
+    echo 'hsetroot -solid "#123456" &' >> /home/desktop/.config/openbox/autostart && \
+    chown -R desktop:desktop /home/desktop && \
+    chmod +x /home/desktop/.config/openbox/autostart
 
-RUN mkdir -p /root/.config/tint2
-COPY tint2rc /root/.config/tint2/
+COPY tint2rc /home/desktop/.config/tint2/
+RUN chown desktop:desktop /home/desktop/.config/tint2/tint2rc
+
+USER desktop
+WORKDIR /home/desktop
 
 EXPOSE 8080
 ENTRYPOINT ["/bin/bash", "-c", "/usr/bin/supervisord"]
