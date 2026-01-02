@@ -1,16 +1,17 @@
 # novnc-desktop
+
 A relatively small noVNC (web-based) desktop Docker image
 
-Docker image: https://hub.docker.com/r/prbinu/novnc-desktop
+Originally from repo: https://hub.docker.com/r/prbinu/novnc-desktop
 
 ## Features
-* Ubuntu Focal Docker base image
-* [easy-novnc](https://github.com/pgaskin/easy-novnc) - A Golang based noVNC binary
-* [TigerVNC](https://tigervnc.org/) - supports auto screen resizing
+
+* Ubuntu 22.04 LTS Docker base image
+* [easy-novnc](https://github.com/geek1011/easy-novnc) - A Golang based noVNC binary
+* [TigerVNC](https://tigervnc.org/) - supports auto screen resizing (both x86_64 and ARM64)
 * [Openbox](http://openbox.org/wiki/Main_Page) - A light weight window manager
 * Firefox - Browser
 * Includes basic utilities such as `ssh`, `curl` etc.
-* Total image size - 732MB
 
 This Dockerfile is derived from <a href="https://www.digitalocean.com/community/tutorials/how-to-remotely-access-gui-applications-using-docker-and-caddy-on-debian-9" target="_blank">how-to-remotely-access-gui-applications-using-docker-and-caddy-on-debian-9</a>
 
@@ -27,6 +28,7 @@ This Dockerfile is derived from <a href="https://www.digitalocean.com/community/
 ## Build
 
 ### Intel architectures
+
 ```bash
 git clone https://github.com/prbinu/novnc-desktop.git
 cd novnc-desktop
@@ -44,10 +46,12 @@ cd novnc-desktop
 
 docker build -t prbinu/novnc-desktop -f Dockerfile.arm64 .
 ```
+
 ### Run
 
 ```bash
 docker run -p 8080:8080 -e "TZ=America/Los_Angeles" prbinu/novnc-desktop
 ```
+
 In browser, open: `http://localhost:8080/
 `
