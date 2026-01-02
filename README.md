@@ -6,13 +6,13 @@ Originally from repo: https://hub.docker.com/r/prbinu/novnc-desktop
 
 ## Features
 
-* Debian Bookworm slim Docker base image (optimized size, ~60MB base)
+* Debian Trixie slim Docker base image (optimized size, ~60MB base)
 * [easy-novnc](https://github.com/geek1011/easy-novnc) - A Golang based noVNC binary
 * [TigerVNC](https://tigervnc.org/) - supports auto screen resizing (both x86_64 and ARM64)
 * [Openbox](http://openbox.org/wiki/Main_Page) - A light weight window manager
 * Firefox ESR - Browser (no snap dependencies, from Debian repositories)
 * Non-root user (desktop) for improved security
-* Includes basic utilities such as `ssh`, `curl` etc.
+* Includes basic utilities such as `ssh`, `curl` , `uv`  etc.
 
 This Dockerfile is derived from <a href="https://www.digitalocean.com/community/tutorials/how-to-remotely-access-gui-applications-using-docker-and-caddy-on-debian-9" target="_blank">how-to-remotely-access-gui-applications-using-docker-and-caddy-on-debian-9</a>
 

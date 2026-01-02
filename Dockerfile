@@ -4,7 +4,7 @@ RUN go mod init build && \
     go get github.com/geek1011/easy-novnc@latest && \
     go build -o /bin/easy-novnc github.com/geek1011/easy-novnc
 
-FROM docker.io/library/debian:bookworm-slim
+FROM docker.io/library/debian:trixie-slim
 ENV DEBIAN_FRONTEND=noninteractive 
 
 # Install base packages and Firefox ESR (without snap)
@@ -13,10 +13,19 @@ RUN apt-get update -y && \
     openbox tint2 xdg-utils lxterminal hsetroot tigervnc-standalone-server supervisor \
     vim openssh-client wget curl rsync ca-certificates apulse libpulse0 \
     firefox-esr \
+    python3 python3-pip python3-venv \
     htop tar xzip gzip bzip2 zip unzip \
-    sudo locales && \
+    sudo locales less && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Install uv (Python package manager)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    (mv /root/.cargo/bin/uv /usr/local/bin/uv 2>/dev/null || \
+     mv /root/.local/bin/uv /usr/local/bin/uv 2>/dev/null || \
+     find /root -name uv -type f -executable -exec mv {} /usr/local/bin/uv \; 2>/dev/null || true) && \
+    chmod +x /usr/local/bin/uv && \
+    uv --version
 
 # Create non-root user for desktop
 RUN useradd -m -s /bin/bash -G audio,video desktop && \
@@ -32,10 +41,19 @@ COPY menu.xml /etc/xdg/openbox/
 # Configure desktop user directories and permissions
 RUN mkdir -p /home/desktop/.config/tint2 && \
     mkdir -p /home/desktop/.config/openbox && \
+    mkdir -p /home/desktop/.local/share/applications && \
     cp /etc/xdg/openbox/menu.xml /home/desktop/.config/openbox/ && \
     echo 'hsetroot -solid "#123456" &' >> /home/desktop/.config/openbox/autostart && \
     chown -R desktop:desktop /home/desktop && \
     chmod +x /home/desktop/.config/openbox/autostart
+
+# Copy internal README.txt with usage instructions
+COPY README_INTERNAL.txt /home/desktop/README.txt
+RUN chown desktop:desktop /home/desktop/README.txt
+
+# Configure autostart to show README in terminal with larger window aligned to right
+RUN echo 'lxterminal --geometry=80x50-0+0 -e "bash -c \"more ~/README.txt; exec bash\"" &' >> /home/desktop/.config/openbox/autostart && \
+    chown desktop:desktop /home/desktop/.config/openbox/autostart
 
 COPY tint2rc /home/desktop/.config/tint2/
 RUN chown desktop:desktop /home/desktop/.config/tint2/tint2rc
