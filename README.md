@@ -13,6 +13,7 @@ Originally from repo: https://hub.docker.com/r/prbinu/novnc-desktop
 * Firefox ESR - Browser (no snap dependencies, from Debian repositories)
 * Non-root user (desktop) for improved security
 * Includes basic utilities such as `ssh`, `curl` , `uv`  etc.
+* Volume persistence support with automatic configuration initialization
 
 This Dockerfile is derived from <a href="https://www.digitalocean.com/community/tutorials/how-to-remotely-access-gui-applications-using-docker-and-caddy-on-debian-9" target="_blank">how-to-remotely-access-gui-applications-using-docker-and-caddy-on-debian-9</a>
 
@@ -48,7 +49,34 @@ cd novnc-desktop
 docker build -t novnc-desktop -f Dockerfile.arm64 .
 ```
 
-### Run
+## Run
+
+### Using Docker Compose (Recommended)
+
+Docker Compose is the recommended way to run the container, especially if you want to persist your data:
+
+```bash
+# Prepare the volume directory with correct permissions
+./setup-volume.sh
+
+# Build and start the container
+docker-compose up -d
+# or with podman-compose:
+podman-compose up -d
+```
+
+The `setup-volume.sh` script prepares the `home-desktop` directory with the correct permissions so the container can write configuration files.
+
+**Volume Persistence**: The `docker-compose.yaml` file mounts `./home-desktop` to `/home/desktop` in the container, allowing you to:
+- Persist your files and configurations across container restarts
+- Access your files from the host system
+- Keep your desktop customizations
+
+**Automatic Configuration**: On first start, the container automatically initializes the desktop configuration files (Openbox menu, tint2 panel, autostart scripts) if they don't exist in the volume. This ensures the desktop always has a working configuration.
+
+**Podman Support**: The initialization script automatically detects when running with podman (where volumes maintain host ownership) and uses permissive permissions to ensure the container can write configuration files. This allows seamless operation with both Docker and Podman.
+
+### Using Docker directly
 
 ```bash
 docker run -p 8080:8080 -d --name mydesktop -e "TZ=Europe/Rome" novnc-desktop
@@ -56,5 +84,21 @@ docker run -p 8080:8080 -d --name mydesktop -e "TZ=Europe/Rome" novnc-desktop
 
 Eventually change your time zone, like "TZ=America/Los_Angeles"
 
-In browser, open: `http://localhost:8080/
-`
+### Access
+
+In browser, open: `http://localhost:8080/`
+
+## Volume Management
+
+The container uses a volume to persist user data. The initialization script (`init-desktop.sh`) automatically:
+- Creates necessary configuration directories if they don't exist
+- Copies default configuration files (Openbox menu, tint2 panel, autostart)
+- Ensures the desktop environment is properly configured
+
+If you need to reset the desktop configuration, you can:
+1. Stop the container: `docker-compose down`
+2. Remove the volume directory: `rm -rf home-desktop`
+3. Recreate it: `./setup-volume.sh`
+4. Restart: `docker-compose up -d`
+
+The container will automatically reinitialize all configuration files on the next start.
