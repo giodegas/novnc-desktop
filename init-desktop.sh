@@ -13,6 +13,127 @@ echo "Current user: $(whoami)"
 echo "Current UID: $(id -u)"
 echo "Current GID: $(id -g)"
 
+# Detect target UID/GID from environment variables or volume ownership
+TARGET_UID="${HOST_UID:-}"
+TARGET_GID="${HOST_GID:-}"
+
+# If not set via environment, try to detect from volume ownership
+if [ -z "$TARGET_UID" ] || [ -z "$TARGET_GID" ]; then
+    if [ -d "$HOME_DIR" ]; then
+        VOLUME_UID=$(stat -c '%u' "$HOME_DIR" 2>/dev/null || echo "")
+        VOLUME_GID=$(stat -c '%g' "$HOME_DIR" 2>/dev/null || echo "")
+        if [ -n "$VOLUME_UID" ] && [ -n "$VOLUME_GID" ]; then
+            TARGET_UID="${TARGET_UID:-$VOLUME_UID}"
+            TARGET_GID="${TARGET_GID:-$VOLUME_GID}"
+            echo "Detected UID/GID from volume: $TARGET_UID:$TARGET_GID"
+        fi
+    fi
+fi
+
+# If still not set, use current desktop user UID/GID
+if [ -z "$TARGET_UID" ] || [ -z "$TARGET_GID" ]; then
+    DESKTOP_UID=$(id -u desktop 2>/dev/null || echo "")
+    DESKTOP_GID=$(id -g desktop 2>/dev/null || echo "")
+    TARGET_UID="${TARGET_UID:-$DESKTOP_UID}"
+    TARGET_GID="${TARGET_GID:-$DESKTOP_GID}"
+    echo "Using desktop user UID/GID: $TARGET_UID:$TARGET_GID"
+fi
+
+echo "Target UID/GID: $TARGET_UID:$TARGET_GID"
+
+# Get current desktop user UID/GID
+CURRENT_DESKTOP_UID=$(id -u desktop 2>/dev/null || echo "")
+CURRENT_DESKTOP_GID=$(id -g desktop 2>/dev/null || echo "")
+
+# Modify desktop user to match target UID/GID if different
+if [ -n "$TARGET_UID" ] && [ -n "$TARGET_GID" ] && \
+   [ -n "$CURRENT_DESKTOP_UID" ] && [ -n "$CURRENT_DESKTOP_GID" ]; then
+    if [ "$CURRENT_DESKTOP_UID" != "$TARGET_UID" ] || [ "$CURRENT_DESKTOP_GID" != "$TARGET_GID" ]; then
+        echo ""
+        echo "=== Modifying desktop user to match host UID/GID ==="
+        echo "Current desktop UID/GID: $CURRENT_DESKTOP_UID:$CURRENT_DESKTOP_GID"
+        echo "Target UID/GID: $TARGET_UID:$TARGET_GID"
+        
+        # Check if target group exists, create if not
+        if ! getent group "$TARGET_GID" >/dev/null 2>&1; then
+            echo "Creating group with GID $TARGET_GID..."
+            groupadd -g "$TARGET_GID" desktop_group 2>/dev/null || {
+                # If group with that GID exists, use it
+                EXISTING_GROUP=$(getent group "$TARGET_GID" | cut -d: -f1)
+                echo "Group with GID $TARGET_GID already exists: $EXISTING_GROUP"
+                groupmod -g "$TARGET_GID" desktop 2>/dev/null || {
+                    echo "Modifying desktop group to GID $TARGET_GID..."
+                    usermod -g "$TARGET_GID" desktop 2>/dev/null || true
+                }
+            }
+        fi
+        
+        # Modify desktop group to target GID
+        if [ "$CURRENT_DESKTOP_GID" != "$TARGET_GID" ]; then
+            echo "Modifying desktop group GID from $CURRENT_DESKTOP_GID to $TARGET_GID..."
+            groupmod -g "$TARGET_GID" desktop 2>/dev/null || {
+                echo "Warning: Could not modify group GID, trying alternative method..."
+                # Alternative: change primary group
+                EXISTING_GROUP=$(getent group "$TARGET_GID" | cut -d: -f1)
+                if [ -n "$EXISTING_GROUP" ]; then
+                    usermod -g "$EXISTING_GROUP" desktop 2>/dev/null || true
+                fi
+            }
+        fi
+        
+        # Modify desktop user to target UID
+        if [ "$CURRENT_DESKTOP_UID" != "$TARGET_UID" ]; then
+            echo "Modifying desktop user UID from $CURRENT_DESKTOP_UID to $TARGET_UID..."
+            usermod -u "$TARGET_UID" desktop 2>/dev/null || {
+                echo "Warning: Could not modify user UID (may require container restart)"
+            }
+        fi
+        
+        echo "Desktop user modification completed"
+        echo "New desktop UID/GID: $(id -u desktop 2>/dev/null || echo 'unknown'):$(id -g desktop 2>/dev/null || echo 'unknown')"
+    else
+        echo "Desktop user UID/GID already matches target: $TARGET_UID:$TARGET_GID"
+    fi
+fi
+
+# Function to fix ownership of existing files
+fix_ownership() {
+    local target_dir="$1"
+    local target_uid="$2"
+    local target_gid="$3"
+    
+    echo ""
+    echo "=== Fixing ownership of files in $target_dir ==="
+    echo "Target ownership: $target_uid:$target_gid"
+    
+    if [ ! -d "$target_dir" ]; then
+        echo "Directory $target_dir does not exist, skipping ownership fix"
+        return 0
+    fi
+    
+    # Try to fix ownership as root first
+    if chown -R "$target_uid:$target_gid" "$target_dir" 2>/dev/null; then
+        echo "✓ Ownership fixed successfully (as root)"
+        return 0
+    fi
+    
+    # If that fails, try as desktop user (for podman scenarios)
+    echo "Attempting to fix ownership as desktop user..."
+    if runuser -u desktop -- chown -R "$target_uid:$target_gid" "$target_dir" 2>/dev/null; then
+        echo "✓ Ownership fixed successfully (as desktop user)"
+        return 0
+    fi
+    
+    echo "Warning: Could not fix ownership of $target_dir"
+    echo "This may be normal in some container environments (e.g., podman with rootless mode)"
+    return 1
+}
+
+# Fix ownership of existing files in home directory
+if [ -n "$TARGET_UID" ] && [ -n "$TARGET_GID" ]; then
+    fix_ownership "$HOME_DIR" "$TARGET_UID" "$TARGET_GID"
+fi
+
 # Check if home directory exists
 if [ ! -d "$HOME_DIR" ]; then
     echo "ERROR: Home directory $HOME_DIR does not exist!"

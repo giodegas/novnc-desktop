@@ -76,6 +76,23 @@ The `setup-volume.sh` script prepares the `home-desktop` directory with the corr
 
 **Podman Support**: The initialization script automatically detects when running with podman (where volumes maintain host ownership) and uses permissive permissions to ensure the container can write configuration files. This allows seamless operation with both Docker and Podman.
 
+**File Ownership Management**: The container automatically manages file ownership to match your host user. On startup, the initialization script:
+- Detects the target UID/GID from environment variables (`HOST_UID` and `HOST_GID`) or automatically from the mounted volume ownership
+- Modifies the `desktop` user in the container to match the target UID/GID
+- Fixes ownership of all existing files in the volume to match the host user
+
+This ensures that files created in the container have the same ownership as your host user, making it easy to access and modify files from both the container and the host system.
+
+To manually specify the UID/GID, set environment variables before starting:
+
+```bash
+export HOST_UID=$(id -u)
+export HOST_GID=$(id -g)
+docker-compose up -d
+```
+
+If not specified, the script will automatically detect the UID/GID from the volume ownership.
+
 ### Using Docker directly
 
 ```bash
@@ -102,3 +119,44 @@ If you need to reset the desktop configuration, you can:
 4. Restart: `docker-compose up -d`
 
 The container will automatically reinitialize all configuration files on the next start.
+
+## File Ownership
+
+The container automatically manages file ownership to ensure files in the `home-desktop` volume match your host user's ownership. This feature:
+
+- **Automatic Detection**: If `HOST_UID` and `HOST_GID` environment variables are not set, the script automatically detects the UID/GID from the mounted volume ownership
+- **User Modification**: The `desktop` user in the container is modified to use the target UID/GID, ensuring all files created have the correct ownership
+- **Ownership Fix**: On each startup, the script fixes ownership of all existing files in the volume to match the target UID/GID
+
+### Manual Configuration
+
+To explicitly set the UID/GID, export environment variables before starting the container:
+
+```bash
+export HOST_UID=$(id -u)
+export HOST_GID=$(id -g)
+docker-compose up -d
+```
+
+Or create a `.env` file in the same directory as `docker-compose.yaml`:
+
+```bash
+HOST_UID=1001
+HOST_GID=1001
+```
+
+Then start with:
+
+```bash
+docker-compose --env-file .env up -d
+```
+
+### Fixing Existing Files
+
+If you have existing files with incorrect ownership, the container will automatically fix them on startup. However, if you need to fix ownership manually from the host:
+
+```bash
+sudo chown -R $(id -u):$(id -g) home-desktop/
+```
+
+The container will maintain this ownership on subsequent starts.
