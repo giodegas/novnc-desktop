@@ -43,7 +43,7 @@ docker build --squash -t novnc-desktop .
 (including RaspberryPI and Apple M1)
 
 ```bash
-git clone https://github.com/prbinu/novnc-desktop.git
+git clone https://github.com/giodegas/novnc-desktop.git
 cd novnc-desktop
 
 docker build -t novnc-desktop -f Dockerfile.arm64 .
