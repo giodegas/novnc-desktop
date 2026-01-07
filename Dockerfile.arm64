@@ -39,27 +39,34 @@ COPY --from=easy-novnc-build /bin/easy-novnc /usr/local/bin/
 COPY supervisord_arm64.conf /etc/supervisord.conf
 COPY menu.xml /etc/xdg/openbox/
 
-# Configure desktop user directories and permissions
+# Store default configuration files for initialization script
+RUN mkdir -p /etc/desktop-defaults/.config/tint2 && \
+    mkdir -p /etc/desktop-defaults/.config/openbox
+
+COPY tint2rc /etc/desktop-defaults/.config/tint2/tint2rc
+COPY menu.xml /etc/desktop-defaults/.config/openbox/menu.xml
+COPY README_INTERNAL.txt /etc/desktop-defaults/README.txt
+
+# Create default autostart file
+RUN echo 'hsetroot -solid "#123456" &' > /etc/desktop-defaults/.config/openbox/autostart && \
+    echo 'lxterminal --geometry=80x50-0+0 -e "bash -c \"more ~/README.txt; exec bash\"" &' >> /etc/desktop-defaults/.config/openbox/autostart && \
+    chmod +x /etc/desktop-defaults/.config/openbox/autostart
+
+# Copy initialization script
+COPY init-desktop.sh /usr/local/bin/init-desktop.sh
+RUN chmod +x /usr/local/bin/init-desktop.sh
+
+# Configure desktop user directories and permissions (for when volume is not used)
 RUN mkdir -p /home/desktop/.config/tint2 && \
     mkdir -p /home/desktop/.config/openbox && \
     mkdir -p /home/desktop/.local/share/applications && \
     cp /etc/xdg/openbox/menu.xml /home/desktop/.config/openbox/ && \
-    echo 'hsetroot -solid "#123456" &' >> /home/desktop/.config/openbox/autostart && \
-    chown -R desktop:desktop /home/desktop && \
-    chmod +x /home/desktop/.config/openbox/autostart
+    cp /etc/desktop-defaults/.config/openbox/autostart /home/desktop/.config/openbox/ && \
+    cp /etc/desktop-defaults/.config/tint2/tint2rc /home/desktop/.config/tint2/ && \
+    cp /etc/desktop-defaults/README.txt /home/desktop/README.txt && \
+    chown -R desktop:desktop /home/desktop
 
-# Copy internal README.txt with usage instructions
-COPY README_INTERNAL.txt /home/desktop/README.txt
-RUN chown desktop:desktop /home/desktop/README.txt
-# Configure autostart to show README in terminal with larger window aligned to right
-RUN echo 'lxterminal --geometry=80x50-0+0 -e "bash -c \"more ~/README.txt; exec bash\"" &' >> /home/desktop/.config/openbox/autostart && \
-    chown desktop:desktop /home/desktop/.config/openbox/autostart
-
-COPY tint2rc /home/desktop/.config/tint2/
-RUN chown desktop:desktop /home/desktop/.config/tint2/tint2rc
-
-USER desktop
 WORKDIR /home/desktop
 
 EXPOSE 8080
-ENTRYPOINT ["/bin/bash", "-c", "/usr/bin/supervisord"]
+ENTRYPOINT ["/usr/local/bin/init-desktop.sh"]
