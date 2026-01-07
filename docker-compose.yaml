@@ -10,6 +10,8 @@ services:
       - "8080:8080"
     volumes:
       - ./home-desktop:/home/desktop:Z
+    # For Podman: keep the host user's UID/GID mapping
+    userns_mode: keep-id
     restart: unless-stopped
     stdin_open: true
     tty: true
