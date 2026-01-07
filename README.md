@@ -74,6 +74,8 @@ The `setup-volume.sh` script prepares the `home-desktop` directory with the corr
 
 **Automatic Configuration**: On first start, the container automatically initializes the desktop configuration files (Openbox menu, tint2 panel, autostart scripts) if they don't exist in the volume. This ensures the desktop always has a working configuration.
 
+**Podman Support**: The initialization script automatically detects when running with podman (where volumes maintain host ownership) and uses permissive permissions to ensure the container can write configuration files. This allows seamless operation with both Docker and Podman.
+
 ### Using Docker directly
 
 ```bash

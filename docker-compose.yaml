@@ -9,7 +9,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./home-desktop:/home/desktop
+      - ./home-desktop:/home/desktop:Z
     restart: unless-stopped
     stdin_open: true
     tty: true
