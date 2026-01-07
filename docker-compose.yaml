@@ -10,6 +10,9 @@ services:
       - "8080:8080"
     volumes:
       - ./home-desktop:/home/desktop:Z
+    environment:
+      - HOST_UID=${HOST_UID}
+      - HOST_GID=${HOST_GID}
     restart: unless-stopped
     stdin_open: true
     tty: true
