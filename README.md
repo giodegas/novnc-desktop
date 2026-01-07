@@ -61,9 +61,27 @@ Docker Compose is the recommended way to run the container, especially if you wa
 
 # Build and start the container
 docker-compose up -d
-# or with podman-compose:
-podman-compose up -d
 ```
+
+#### Using Podman Compose
+
+When using podman-compose with `userns_mode: keep-id`, you need to disable pod mode to avoid conflicts:
+
+```bash
+# Set the environment variable to disable pod mode
+export PODMAN_COMPOSE_IN_POD=0
+
+# Build and start the container
+podman compose up -d
+```
+
+Or in a single command:
+
+```bash
+PODMAN_COMPOSE_IN_POD=0 podman compose up -d
+```
+
+**Note**: The `userns_mode: keep-id` option in `docker-compose.yaml` maps the container user to your host UID/GID. This is incompatible with podman's default pod mode, hence the need for `PODMAN_COMPOSE_IN_POD=0`.
 
 The `setup-volume.sh` script prepares the `home-desktop` directory with the correct permissions so the container can write configuration files.
 
@@ -74,7 +92,12 @@ The `setup-volume.sh` script prepares the `home-desktop` directory with the corr
 
 **Automatic Configuration**: On first start, the container automatically initializes the desktop configuration files (Openbox menu, tint2 panel, autostart scripts) if they don't exist in the volume. This ensures the desktop always has a working configuration.
 
-**Podman Support**: The initialization script automatically detects when running with podman (where volumes maintain host ownership) and uses permissive permissions to ensure the container can write configuration files. This allows seamless operation with both Docker and Podman.
+**Podman Support**: The container is compatible with both Docker and Podman. When using Podman:
+
+- The `userns_mode: keep-id` option maps the container user to your host UID/GID
+- You must set `PODMAN_COMPOSE_IN_POD=0` to avoid conflicts between `--userns` and `--pod` flags
+- The `supervisord.conf` has `user=desktop` commented out for compatibility with non-root execution
+- The initialization script automatically detects when running with podman and uses permissive permissions
 
 **File Ownership Management**: The container automatically manages file ownership to match your host user. On startup, the initialization script:
 - Detects the target UID/GID from environment variables (`HOST_UID` and `HOST_GID`) or automatically from the mounted volume ownership
@@ -160,3 +183,30 @@ sudo chown -R $(id -u):$(id -g) home-desktop/
 ```
 
 The container will maintain this ownership on subsequent starts.
+
+## Troubleshooting
+
+### Podman: "--userns and --pod cannot be set together"
+
+This error occurs when running podman-compose with `userns_mode: keep-id`. Solution:
+
+```bash
+export PODMAN_COMPOSE_IN_POD=0
+podman compose up -d
+```
+
+### Podman: "Can't drop privilege as nonroot user"
+
+This supervisord error occurs if `user=desktop` is set in `supervisord.conf` while running as non-root (with `userns_mode: keep-id`). The provided `supervisord.conf` has this line commented out. If you see this error, verify that line 6 in `supervisord.conf` is commented:
+
+```
+# user=desktop  # Commented out for userns_mode: keep-id compatibility
+```
+
+### Permission denied on volume files
+
+If files in `home-desktop` have incorrect ownership, fix them from the host:
+
+```bash
+sudo chown -R $(id -u):$(id -g) home-desktop/
+```
