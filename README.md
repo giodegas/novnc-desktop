@@ -127,3 +127,35 @@ Fix ownership from the host:
 ```bash
 sudo chown -R $(id -u):$(id -g) home-desktop/
 ```
+
+### Podman: Container stops after logout (RHEL/AlmaLinux/Fedora)
+
+On systems with systemd (RHEL 9, AlmaLinux 9, Fedora, etc.), Podman rootless containers are tied to the user session. When you logout or close your SSH session, systemd terminates all user processes, including your containers.
+
+**Symptoms:**
+- Container exits with `SIGTERM` after some time
+- Container stops when you close the terminal or SSH session
+- Container status shows "Exited" after logout
+
+**Solution:** Enable "linger" for your user to allow processes to persist after logout:
+
+```bash
+# Check current linger status
+loginctl show-user $USER | grep Linger
+
+# Enable linger (requires sudo)
+sudo loginctl enable-linger $USER
+```
+
+After enabling linger:
+- The user's systemd manager starts at boot (before login)
+- Containers continue running after logout
+- Containers persist until explicitly stopped
+
+**Verify linger is enabled:**
+
+```bash
+ls /var/lib/systemd/linger/
+```
+
+Your username should appear in the list.
