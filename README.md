@@ -58,11 +58,11 @@ docker build -t novnc-desktop -f Dockerfile.arm64 .
 ./setup-volume.sh
 
 # Build and start the container using docker-compose.yaml
-# The container will automatically use your host UID/GID
-docker compose -f docker-compose.yaml up -d
+# IMPORTANT: Export UID and GID so docker-compose can pass them to the container
+UID=$(id -u) GID=$(id -g) docker compose -f docker-compose.yaml up -d
 ```
 
-**Note:** The `docker-compose.yaml` file automatically passes your host UID/GID to the container via environment variables. The `docker-entrypoint.sh` script reconfigures the `desktop` user to match your host user, ensuring correct file permissions in the volume.
+**Note:** The `UID=$(id -u) GID=$(id -g)` prefix is required because these variables are not exported by default in bash. The `docker-entrypoint.sh` script uses these values to reconfigure the `desktop` user to match your host user, ensuring correct file permissions in the volume.
 
 ### Using Podman Compose (Recommended for Podman)
 
