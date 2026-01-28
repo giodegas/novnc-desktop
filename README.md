@@ -51,23 +51,33 @@ docker build -t novnc-desktop -f Dockerfile.arm64 .
 
 ## Run
 
-### Using Docker Compose (Recommended)
+### Using Docker Compose (Recommended for Docker)
 
 ```bash
 # Prepare the volume directory with correct permissions
 ./setup-volume.sh
 
-# Build and start the container
-docker-compose up -d
+# Build and start the container using docker-compose.yaml
+# The container will automatically use your host UID/GID
+docker-compose -f docker-compose.yaml up -d
 ```
 
-### Using Podman Compose
+**Note:** The `docker-compose.yaml` file automatically passes your host UID/GID to the container via environment variables. The `docker-entrypoint.sh` script reconfigures the `desktop` user to match your host user, ensuring correct file permissions in the volume.
 
-Podman requires disabling pod mode due to `userns_mode: keep-id`:
+### Using Podman Compose (Recommended for Podman)
+
+Podman uses `docker-compose-podman.yaml` which includes `userns_mode: keep-id` to map your host UID/GID directly:
 
 ```bash
-PODMAN_COMPOSE_IN_POD=0 podman compose up -d
+# Prepare the volume directory with correct permissions
+./setup-volume.sh
+
+# Build and start the container using docker-compose-podman.yaml
+# Podman requires disabling pod mode due to userns_mode: keep-id
+PODMAN_COMPOSE_IN_POD=0 podman compose -f docker-compose-podman.yaml up -d
 ```
+
+**Note:** With Podman, `userns_mode: keep-id` automatically maps your host UID/GID, so no user reconfiguration is needed. The container runs with your host user identity directly.
 
 ### Using Docker directly
 
@@ -83,7 +93,7 @@ In browser, open: `http://localhost:8080/`
 
 ## Volume Persistence
 
-The `docker-compose.yaml` mounts `./home-desktop` to `/home/desktop`, allowing you to:
+Both `docker-compose.yaml` (Docker) and `docker-compose-podman.yaml` (Podman) mount `./home-desktop` to `/home/desktop`, allowing you to:
 
 - Persist files and configurations across container restarts
 - Access your files from the host system
@@ -95,9 +105,15 @@ On first start, the container automatically initializes desktop configuration fi
 
 ## File Permissions
 
-When using Podman with `userns_mode: keep-id`, the container runs with your host UID/GID, so files created in the volume will have the correct ownership automatically.
+Both Docker and Podman configurations use your host UID/GID, ensuring correct file permissions:
 
-When using Docker, files in the volume may be owned by the container's `desktop` user (UID 1000). To fix ownership from the host:
+- **Docker** (`docker-compose.yaml`): Uses `docker-entrypoint.sh` to reconfigure the `desktop` user with your host UID/GID at container startup. The script reads `HOST_UID` and `HOST_GID` from environment variables (automatically set from your shell's `UID` and `GID`).
+
+- **Podman** (`docker-compose-podman.yaml`): Uses `userns_mode: keep-id` to run with your host UID/GID directly. No user reconfiguration is needed as Podman handles the mapping automatically.
+
+Files created in the volume will have the correct ownership automatically in both cases, matching your host user.
+
+If you need to manually fix ownership from the host:
 
 ```bash
 sudo chown -R $(id -u):$(id -g) home-desktop/

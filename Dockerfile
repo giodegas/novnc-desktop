@@ -16,7 +16,7 @@ RUN apt-get update -y && \
     firefox-esr \
     python3 python3-pip python3-venv python3-tk \
     htop tar xzip gzip bzip2 zip unzip \
-    sudo locales less && \
+    sudo locales less gosu && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -56,6 +56,10 @@ RUN echo 'hsetroot -solid "#123456" &' > /etc/desktop-defaults/.config/openbox/a
 COPY init-desktop.sh /usr/local/bin/init-desktop.sh
 RUN chmod +x /usr/local/bin/init-desktop.sh
 
+# Copy Docker entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Configure desktop user directories and permissions (for when volume is not used)
 RUN mkdir -p /home/desktop/.config/tint2 && \
     mkdir -p /home/desktop/.config/openbox && \
@@ -69,4 +73,4 @@ RUN mkdir -p /home/desktop/.config/tint2 && \
 WORKDIR /home/desktop
 
 EXPOSE 8080
-ENTRYPOINT ["/usr/local/bin/init-desktop.sh"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
