@@ -12,6 +12,7 @@ services:
       - ./home-desktop:/home/desktop
     # For Docker: pass host user's UID/GID to reconfigure desktop user
     # Container starts as root, then docker-entrypoint.sh switches to desktop user
+    # Note: Run with: UID=$(id -u) GID=$(id -g) docker-compose up -d
     environment:
       - HOST_UID=${UID:-1000}
       - HOST_GID=${GID:-1000}
