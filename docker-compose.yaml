@@ -9,9 +9,12 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./home-desktop:/home/desktop:Z
-    # For Podman: keep the host user's UID/GID mapping
-    userns_mode: keep-id
+      - ./home-desktop:/home/desktop
+    # For Docker: pass host user's UID/GID to reconfigure desktop user
+    # Container starts as root, then docker-entrypoint.sh switches to desktop user
+    environment:
+      - HOST_UID=${UID:-1000}
+      - HOST_GID=${GID:-1000}
     restart: unless-stopped
     stdin_open: true
     tty: true
